@@ -42,6 +42,7 @@ export function AccountDialog({ open, onClose, account, onSave, onDelete }: { op
   const [icon, setIcon] = useState<Account['icon']>(account?.icon ?? 'bank');
   const [fields, setFields] = useState(account?.fields ?? [{ label: 'اسم صاحب الحساب', value: '' }, { label: 'الـ IBAN', value: '' }]);
   const [description, setDescription] = useState(account?.description ?? '');
+  const [directLink, setDirectLink] = useState(account?.directLink ?? '');
   const [warningTitle, setWarningTitle] = useState(account?.warningTitle ?? '');
   const [warning, setWarning] = useState((account?.warning ?? []).join('\n'));
   const [note, setNote] = useState((account?.note ?? []).join('\n'));
@@ -49,7 +50,7 @@ export function AccountDialog({ open, onClose, account, onSave, onDelete }: { op
   const { busy, error, run } = useSubmit(() => onSave({
     ...(account ?? {}), title: title.trim(), subtitle, icon, date,
     fields: fields.filter((f) => f.label.trim() && f.value.trim()).map((f) => ({ label: f.label.trim(), value: f.value.trim() })),
-    description: description.trim() || undefined, warningTitle: warningTitle.trim() || undefined, warning: lines(warning), note: lines(note),
+    description: description.trim() || undefined, directLink: directLink.trim() || undefined, warningTitle: warningTitle.trim() || undefined, warning: lines(warning), note: lines(note),
   }), onClose);
   const del = useSubmit(async () => { await onDelete?.(); }, onClose);
   const setField = (i: number, k: 'label' | 'value', v: string) => setFields(fields.map((f, j) => (j === i ? { ...f, [k]: v } : f)));
@@ -58,6 +59,7 @@ export function AccountDialog({ open, onClose, account, onSave, onDelete }: { op
     <label>الوصف القصير<Input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} maxLength={200} /></label>
     <label>النوع<select className="edit-select" value={icon} onChange={(e) => setIcon(e.target.value as Account['icon'])}><option value="bank">حساب بنكي</option><option value="wallet">محفظة إلكترونية</option></select></label>
     <fieldset className="edit-fields"><legend>البيانات (الاسم، الآيبان، الرقم…)</legend>{fields.map((f, i) => <div className="edit-field-row" key={i}><Input aria-label="العنوان" placeholder="العنوان" value={f.label} onChange={(e) => setField(i, 'label', e.target.value)} maxLength={200} /><Input aria-label="القيمة" placeholder="القيمة" dir="auto" value={f.value} onChange={(e) => setField(i, 'value', e.target.value)} maxLength={500} /><Button type="button" variant="ghost" size="icon" aria-label="حذف الخانة" onClick={() => setFields(fields.filter((_, j) => j !== i))}><Trash2 /></Button></div>)}<Button type="button" variant="outline" onClick={() => setFields([...fields, { label: '', value: '' }])}><Plus />إضافة خانة</Button></fieldset>
+    <label>رابط مباشر (اختياري) — مثل رابط PayPal.me، اتركه فارغًا لإخفاء الزر<Input type="url" dir="ltr" placeholder="https://www.paypal.me/اسم_المستخدم" value={directLink} onChange={(e) => setDirectLink(e.target.value)} maxLength={500} /></label>
     <label>نص توضيحي (اختياري)<Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} /></label>
     <label>عنوان التنبيه (اختياري)<Input value={warningTitle} onChange={(e) => setWarningTitle(e.target.value)} placeholder="تنبيه هام" maxLength={200} /></label>
     <label>التنبيهات — كل سطر تنبيه<Textarea value={warning} onChange={(e) => setWarning(e.target.value)} /></label>
