@@ -404,3 +404,4 @@ h1 em { color: #9bf17d; font-style: normal; }
 .edit-field-row { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 6px; }
 .edit-actions { display: flex; gap: 8px; justify-content: space-between; }
 .admin-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.floating-tools { display: none !important; }
