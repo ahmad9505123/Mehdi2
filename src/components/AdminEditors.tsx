@@ -43,6 +43,10 @@ export function AccountDialog({ open, onClose, account, onSave, onDelete }: { op
   const [fields, setFields] = useState(account?.fields ?? [{ label: 'اسم صاحب الحساب', value: '' }, { label: 'الـ IBAN', value: '' }]);
   const [description, setDescription] = useState(account?.description ?? '');
   const [directLink, setDirectLink] = useState(account?.directLink ?? '');
+  const [mode, setMode] = useState<'data' | 'amount' | 'whatsapp'>(account?.amountRequest ? 'amount' : account?.whatsappMessage ? 'whatsapp' : 'data');
+  const [waMessage, setWaMessage] = useState(account?.whatsappMessage ?? '');
+  const [currencyLabel, setCurrencyLabel] = useState(account?.amountRequest?.currencyLabel ?? '');
+  const [amountMessage, setAmountMessage] = useState(account?.amountRequest?.messageTemplate ?? 'مرحباً، أريد حساب لتحويل مبلغ {amount}');
   const [warningTitle, setWarningTitle] = useState(account?.warningTitle ?? '');
   const [warning, setWarning] = useState((account?.warning ?? []).join('\n'));
   const [note, setNote] = useState((account?.note ?? []).join('\n'));
@@ -50,7 +54,18 @@ export function AccountDialog({ open, onClose, account, onSave, onDelete }: { op
   const { busy, error, run } = useSubmit(() => onSave({
     ...(account ?? {}), title: title.trim(), subtitle, icon, date,
     fields: fields.filter((f) => f.label.trim() && f.value.trim()).map((f) => ({ label: f.label.trim(), value: f.value.trim() })),
-    description: description.trim() || undefined, directLink: directLink.trim() || undefined, warningTitle: warningTitle.trim() || undefined, warning: lines(warning), note: lines(note),
+    description: description.trim() || undefined, directLink: directLink.trim() || undefined,
+    whatsappMessage: mode === 'whatsapp' ? (waMessage.trim() || undefined) : undefined,
+    amountRequest: mode === 'amount' ? {
+      inputLabel: account?.amountRequest?.inputLabel ?? (currencyLabel.trim() ? `المبلغ المطلوب (${currencyLabel.trim()})` : 'المبلغ المطلوب'),
+      placeholder: account?.amountRequest?.placeholder ?? 'مثال: 500',
+      currencyLabel: currencyLabel.trim(),
+      buttonLabel: account?.amountRequest?.buttonLabel ?? 'اطلب الحساب',
+      emptyError: account?.amountRequest?.emptyError ?? 'يرجى كتابة المبلغ المطلوب تحويله أولاً.',
+      invalidError: account?.amountRequest?.invalidError ?? 'يرجى إدخال مبلغ صحيح (أرقام فقط، أكبر من صفر).',
+      messageTemplate: amountMessage.trim() || 'مرحباً، أريد حساب لتحويل مبلغ {amount}',
+    } : undefined,
+    warningTitle: warningTitle.trim() || undefined, warning: lines(warning), note: lines(note),
   }), onClose);
   const del = useSubmit(async () => { await onDelete?.(); }, onClose);
   const setField = (i: number, k: 'label' | 'value', v: string) => setFields(fields.map((f, j) => (j === i ? { ...f, [k]: v } : f)));
@@ -58,6 +73,9 @@ export function AccountDialog({ open, onClose, account, onSave, onDelete }: { op
     <label>اسم الحساب / البنك<Input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} /></label>
     <label>الوصف القصير<Input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} maxLength={200} /></label>
     <label>النوع<select className="edit-select" value={icon} onChange={(e) => setIcon(e.target.value as Account['icon'])}><option value="bank">حساب بنكي</option><option value="wallet">محفظة إلكترونية</option></select></label>
+    <label>طريقة العرض للزبون<select className="edit-select" value={mode} onChange={(e) => setMode(e.target.value as 'data' | 'amount' | 'whatsapp')}><option value="data">عرض بيانات الحساب (الاسم والآيبان)</option><option value="amount">طلب المبلغ ثم إرسال رسالة واتساب</option><option value="whatsapp">زر طلب الحساب عبر واتساب (رسالة جاهزة)</option></select></label>
+    {mode === 'amount' && <><label>اسم العملة (مثل: ريال سعودي SAR)<Input value={currencyLabel} onChange={(e) => setCurrencyLabel(e.target.value)} maxLength={100} /></label><label>نص رسالة واتساب — اكتب {'{amount}'} مكان المبلغ<Textarea value={amountMessage} onChange={(e) => setAmountMessage(e.target.value)} maxLength={500} /></label></>}
+    {mode === 'whatsapp' && <label>نص رسالة واتساب الجاهزة<Textarea value={waMessage} onChange={(e) => setWaMessage(e.target.value)} maxLength={500} /></label>}
     <fieldset className="edit-fields"><legend>البيانات (الاسم، الآيبان، الرقم…)</legend>{fields.map((f, i) => <div className="edit-field-row" key={i}><Input aria-label="العنوان" placeholder="العنوان" value={f.label} onChange={(e) => setField(i, 'label', e.target.value)} maxLength={200} /><Input aria-label="القيمة" placeholder="القيمة" dir="auto" value={f.value} onChange={(e) => setField(i, 'value', e.target.value)} maxLength={500} /><Button type="button" variant="ghost" size="icon" aria-label="حذف الخانة" onClick={() => setFields(fields.filter((_, j) => j !== i))}><Trash2 /></Button></div>)}<Button type="button" variant="outline" onClick={() => setFields([...fields, { label: '', value: '' }])}><Plus />إضافة خانة</Button></fieldset>
     <label>رابط مباشر (اختياري) — مثل رابط PayPal.me، اتركه فارغًا لإخفاء الزر<Input type="url" dir="ltr" placeholder="https://www.paypal.me/اسم_المستخدم" value={directLink} onChange={(e) => setDirectLink(e.target.value)} maxLength={500} /></label>
     <label>نص توضيحي (اختياري)<Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} /></label>
